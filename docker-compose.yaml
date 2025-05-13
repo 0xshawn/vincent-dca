@@ -1,0 +1,63 @@
+x-common: &common-config
+  restart: always
+  logging:
+    driver: 'json-file'
+    options:
+      max-size: '100m'
+      max-file: '5'
+
+services:
+  backend:
+    <<: *common-config
+    image: 0xii/vincent-dca:0.0.1
+    ports:
+      - '3000:3000'
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/vincent_dca
+      - ALLOWED_AUDIENCE=${ALLOWED_AUDIENCE}
+      - CORS_ALLOWED_DOMAIN=${CORS_ALLOWED_DOMAIN}
+      - BASE_RPC_URL=${BASE_RPC_URL}
+      - COINRANKING_API_KEY=${COINRANKING_API_KEY}
+      - VINCENT_DELEGATEE_PRIVATE_KEY=${VINCENT_DELEGATEE_PRIVATE_KEY}
+      - VINCENT_DELEGATEE_ADDRESS=${VINCENT_DELEGATEE_ADDRESS}
+      - VINCENT_APP_VERSION=1
+      - PORT=3000
+      - IS_DEVELOPMENT=true
+      - CONSOLA_LEVEL=5
+    command: >
+      sh -c "cd /app/packages/dca-backend && pnpm start"
+    depends_on:
+      - mongodb
+    networks:
+      - vincent-network
+
+  frontend:
+    <<: *common-config
+    image: 0xii/vincent-dca:0.0.1
+    ports:
+      - '5173:5173'
+    environment:
+      - VITE_APP_ID=154
+      - VITE_APP_VERSION=1
+      - VITE_BACKEND_API_URL=http://localhost:3000
+      - VITE_CONSENT_PAGE_BASE_URL=https://dashboard.heyvincent.ai
+    command: >
+      sh -c "cd /app/packages/dca-frontend && pnpm dev"
+
+  mongodb:
+    <<: *common-config
+    image: mongo:7.0
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - vincent-network
+
+volumes:
+  mongodb_data:
+    driver: local
+
+networks:
+  vincent-network:
+    driver: bridge
